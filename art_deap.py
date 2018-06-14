@@ -4,6 +4,7 @@ import random
 import operator
 import math
 from deap import algorithms
+from deap.algorithms import *
 from deap import base
 from deap import creator 
 from deap import tools
@@ -23,6 +24,7 @@ import scipy.misc
 import tensorflow as tf
 from caffe_classes import class_names
 from graphics_deap import *
+import pdb
 
 ######### INITIALISING GLOBAL VARIABLES
 
@@ -37,14 +39,18 @@ global nRuns
 global mRate
 global cRate
 nRuns= 50
-mRate=0.25
+mRate=0.1
 cRate=0.5
-global treesize_min
-global treesize_max
-treesize_min = 1
-treesize_max = 2
+global init_treesize_min
+global init_treesize_max
+init_treesize_min = 3
+init_treesize_max = 9
+global mut_treesize_min
+global mut_treesize_max
+mut_treesize_min = 0
+mut_treesize_max = 3
 global tourn_size
-tourn_size = 20
+tourn_size = 3
 
 ######### CREATING REQUIRED FUNCTIONS
 
@@ -91,12 +97,132 @@ def evalDummy(individual):
         img_sim[i,0] = (np.sum((np.reshape(FusedIm,[1,img_dim*img_dim])-stim_mat[i,:])**2))**0.5
         fc7_sim[i,0] = (np.sum((fc7_inst-fc7_stim_mat[i,:])**2))**0.5
     #evaluator = np.min(img_sim) + np.min(fc7_sim) # can add novelty term here
-    poke_ind = np.random.randint(n_stim)
-    #evaluator = img_sim[poke_ind,:]*1./56. + fc7_sim[poke_ind,:] # can add novelty term here
-    #evaluator = fc7_sim[poke_ind,:] # can add novelty term here
-    evaluator = fc7_sim[poke_ind,:] + 1./2.*250./0.015*1./(1.*len(str(individual))) # can add novelty term here, one-half the influence of string length
-    #evaluator = 1./(1.*len(str(individual)))
+    #poke_ind = np.random.randint(n_stim)
+    poke_ind = 21
+    evaluator = (1./14211.)*img_sim[poke_ind,:] + (1./220.)*fc7_sim[poke_ind,:] + 0.25*(1./0.0027)*1./(1.*len(str(individual)))
     return evaluator,
+
+def evalDum(offspring): 
+    count = 0
+    in_offspring = np.zeros([len(offspring),img_dim,img_dim])
+    fc7_offspring = np.zeros([len(offspring),4096])
+    evaluator_in = np.zeros([len(offspring)])
+    evaluator_fc7 = np.zeros([len(offspring)])
+    evaluator_len = np.zeros([len(offspring)])
+    evaluator_pop_in = np.zeros([len(offspring)])
+    evaluator_pop_fc7 = np.zeros([len(offspring)])
+    for ind in offspring:
+        FusedIm = eval(str(ind).replace('\'',''),{'__builtins__':None},dispatch)
+        FusedIm = np.array(FusedIm)
+        FusedIm[FusedIm<15] = 0
+        FusedIm[FusedIm>15] = 20 
+        FusedIm[FusedIm==0] = 255
+        FusedIm[FusedIm==20] = 255
+        FusedIm[FusedIm==15] = 0
+        in_offspring[count,:,:] = FusedIm
+        im_inst = np.zeros([np.shape(FusedIm)[0],np.shape(FusedIm)[0],3])
+        im_inst[:,:,0] = FusedIm
+        im_inst[:,:,1] = FusedIm
+        im_inst[:,:,2] = FusedIm
+        dim_inst = np.shape(im_inst)[0]
+        im_inst = scipy.misc.imresize(im_inst,227*1./dim_inst*1.)
+        fc7_inst1 = sess.run(fc7_read, feed_dict = {x:[im_inst,im_inst]})
+        fc7_inst = fc7_inst1[0,:]
+        fc7_offspring[count,:] = fc7_inst
+        img_sim = zeros([n_stim,1])
+        fc7_sim = zeros([n_stim,1])
+        for i in range(n_stim): 
+            img_sim[i,0] = (np.sum((np.reshape(FusedIm,[1,img_dim*img_dim])-stim_mat[i,:])**2))**0.5
+            fc7_sim[i,0] = (np.sum((fc7_inst-fc7_stim_mat[i,:])**2))**0.5
+        #evaluator = np.min(img_sim) + np.min(fc7_sim) # can add novelty term here
+        poke_ind = np.random.randint(n_stim)
+        #poke_ind = 21
+        evaluator_in[count] = img_sim[poke_ind,:]
+        evaluator_fc7[count] = fc7_sim[poke_ind,:]
+        evaluator_len[count] = 1./(1.*len(str(ind)))
+        #evaluator.append((1./14211.)*img_sim[poke_ind,:] + (1./220.)*fc7_sim[poke_ind,:] + 0.25*(1./0.0027)*1./(1.*len(str(individual))))
+        count = count + 1
+    count = 0
+    for ind in offspring:
+        for i in range(len(offspring)):
+            if count != i:
+                evaluator_pop_in[count] = evaluator_pop_in[count] + (np.sum((np.reshape(in_offspring[count,:,:],[1,img_dim*img_dim])-np.reshape(in_offspring[i,:,:],[1,img_dim*img_dim]))**2))**0.5
+                evaluator_pop_fc7[count] = evaluator_pop_fc7[count] + (np.sum((fc7_offspring[count,:]-fc7_offspring[i,:])**2))**0.5
+        count = count + 1
+
+    #pdb.set_trace()
+
+    evaluator_in = evaluator_in/np.mean(evaluator_in)
+    evaluator_fc7 = evaluator_fc7/np.mean(evaluator_fc7)
+    evaluator_len = evaluator_len/np.mean(evaluator_len)
+    evaluator_pop_in = 1./(1.*evaluator_pop_in)
+    evaluator_pop_in = evaluator_pop_in/np.mean(evaluator_pop_in)
+    evaluator_pop_fc7 = 1./(1.*evaluator_pop_fc7)
+    evaluator_pop_fc7 = evaluator_pop_fc7/np.mean(evaluator_pop_fc7)
+
+    evaluator1 = evaluator_in + evaluator_fc7 + evaluator_len + 2*evaluator_pop_in + evaluator_pop_fc7 # mixing fitnesses
+    #evaluator = evaluator.tolist()
+    evaluator = []
+    for i in range(len(offspring)):
+        evaluator.append((np.array([evaluator1[i]]),))
+
+
+    #pdb.set_trace()
+
+    return evaluator
+
+def eaSimple1(population, toolbox, cxpb, mutpb, ngen, stats=None,
+             halloffame=None, verbose=__debug__):
+
+    logbook = tools.Logbook()
+    logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
+
+    # Evaluate the individuals with an invalid fitness
+    invalid_ind = [ind for ind in population if not ind.fitness.valid]
+    #fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+    fitnesses = evalDum(invalid_ind)
+    #pdb.set_trace()
+    for ind, fit in zip(invalid_ind, fitnesses):
+        ind.fitness.values = fit
+
+    if halloffame is not None:
+        halloffame.update(population)
+
+    record = stats.compile(population) if stats else {}
+    logbook.record(gen=0, nevals=len(invalid_ind), **record)
+    if verbose:
+        print logbook.stream
+
+    # Begin the generational process
+    for gen in range(1, ngen + 1):
+        # Select the next generation individuals
+        offspring = toolbox.select(population, len(population))
+
+        # Vary the pool of individuals
+        offspring = varAnd(offspring, toolbox, cxpb, mutpb)
+
+        #pdb.set_trace()
+        # Evaluate the individuals with an invalid fitness
+        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+        #fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+        fitnesses = evalDum(invalid_ind)
+        for ind, fit in zip(invalid_ind, fitnesses):
+            ind.fitness.values = fit
+
+        # Update the hall of fame with the generated individuals
+        if halloffame is not None:
+            halloffame.update(offspring)
+
+        # Replace the current population by the offspring
+        population[:] = offspring
+
+        # Append the current generation statistics to the logbook
+        record = stats.compile(population) if stats else {}
+        logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+        if verbose:
+            print logbook.stream
+
+    return population, logbook
 
 def main():
 
@@ -112,7 +238,7 @@ def main():
     mstats.register("std", np.std)
     mstats.register("min", np.min)
     mstats.register("max", np.max)
-    pop, log = algorithms.eaSimple(pop, toolbox, cRate, mRate, nRuns, stats=mstats,
+    pop, log = eaSimple1(pop, toolbox, cRate, mRate, nRuns, stats=mstats,
                                    halloffame=hof, verbose=True)
     # print log
     return pop, log, hof
@@ -136,10 +262,10 @@ pset.addPrimitive(SF, [str, str], str)
 pset.addPrimitive(TF, [str, str], str)
 pset.addPrimitive(OCCL, [str, str], str)
 
-#pset.addPrimitive(protectedAdd, [float,float], float)
-#pset.addPrimitive(protectedSubt, [float,float], float)
+pset.addPrimitive(protectedAdd, [float,float], float)
+pset.addPrimitive(protectedSubt, [float,float], float)
 pset.addPrimitive(protectedMult, [float,float], float)
-#pset.addPrimitive(protectedDiv, [float,float], float)
+pset.addPrimitive(protectedDiv, [float,float], float)
 
 # TERMINALS
 
@@ -159,14 +285,15 @@ creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
 
 toolbox = base.Toolbox()
-toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=treesize_min, max_=treesize_max)
+toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=init_treesize_min, max_=init_treesize_max)
 toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
 toolbox.register("evaluate", evalDummy)
+#toolbox.register("")
 toolbox.register("select", tools.selTournament,tournsize=tourn_size)
 toolbox.register("mate", gp.cxOnePoint)
-toolbox.register("expr_mut", gp.genHalfAndHalf, min_=treesize_min, max_=treesize_max)
+toolbox.register("expr_mut", gp.genHalfAndHalf, min_=mut_treesize_min, max_=mut_treesize_max)
 toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 
 toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
