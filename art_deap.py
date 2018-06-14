@@ -36,23 +36,23 @@ global fc7_stim_mat
 global conv2_stim_mat
 global conv5_stim_mat
 global n_ea 
-n_ea = 300
+n_ea = 500
 global nRuns
 global mRate
 global cRate
-nRuns= 200
+nRuns= 300
 mRate=0.1
 cRate=0.5
 global init_treesize_min
 global init_treesize_max
-init_treesize_min = 1
-init_treesize_max = 5
+init_treesize_min = 3
+init_treesize_max = 8
 global mut_treesize_min
 global mut_treesize_max
 mut_treesize_min = 0
-mut_treesize_max = 2
+mut_treesize_max = 3
 global tourn_size
-tourn_size = 3
+tourn_size = 5
 
 ######### CREATING REQUIRED FUNCTIONS
 
