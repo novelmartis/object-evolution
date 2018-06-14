@@ -34,11 +34,11 @@ global n_stim
 global stim_mat
 global fc7_stim_mat
 global n_ea 
-n_ea = 300
+n_ea = 500
 global nRuns
 global mRate
 global cRate
-nRuns= 50
+nRuns= 200
 mRate=0.1
 cRate=0.5
 global init_treesize_min
@@ -160,7 +160,7 @@ def evalDum(offspring):
     evaluator_pop_fc7 = 1./(1.*evaluator_pop_fc7)
     evaluator_pop_fc7 = evaluator_pop_fc7/np.mean(evaluator_pop_fc7)
 
-    evaluator1 = evaluator_in + evaluator_fc7 + evaluator_len + 2*evaluator_pop_in + evaluator_pop_fc7 # mixing fitnesses
+    evaluator1 = evaluator_in + evaluator_fc7 + evaluator_len + 2*evaluator_pop_in + 2*evaluator_pop_fc7 # mixing fitnesses
     #evaluator = evaluator.tolist()
     evaluator = []
     for i in range(len(offspring)):
