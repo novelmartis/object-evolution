@@ -36,7 +36,7 @@ global fc7_stim_mat
 global conv2_stim_mat
 global conv5_stim_mat
 global n_ea 
-n_ea = 500
+n_ea = 300
 global nRuns
 global mRate
 global cRate
@@ -46,11 +46,11 @@ cRate=0.5
 global init_treesize_min
 global init_treesize_max
 init_treesize_min = 1
-init_treesize_max = 7
+init_treesize_max = 5
 global mut_treesize_min
 global mut_treesize_max
 mut_treesize_min = 0
-mut_treesize_max = 3
+mut_treesize_max = 2
 global tourn_size
 tourn_size = 3
 
@@ -134,14 +134,13 @@ def evalDum(offspring):
         im_inst[:,:,2] = FusedIm
         dim_inst = np.shape(im_inst)[0]
         im_inst = scipy.misc.imresize(im_inst,227*1./dim_inst*1.)
+        im_inst = im_inst - mean(im_inst)
         fc7_inst1 = sess.run(fc7_read, feed_dict = {x:[im_inst,im_inst]})
         fc7_inst = fc7_inst1[0,:]
         fc7_offspring[count,:] = fc7_inst
-        im_inst = scipy.misc.imresize(im_inst,227*1./dim_inst*1.)
         conv2_inst1 = sess.run(conv2_in, feed_dict = {x:[im_inst,im_inst]})
         conv2_inst = conv2_inst1[0,:].flatten()
         conv2_offspring[count,:] = conv2_inst
-        im_inst = scipy.misc.imresize(im_inst,227*1./dim_inst*1.)
         conv5_inst1 = sess.run(conv5_in, feed_dict = {x:[im_inst,im_inst]})
         conv5_inst = conv5_inst1[0,:].flatten()
         conv5_offspring[count,:] = conv5_inst
@@ -191,7 +190,7 @@ def evalDum(offspring):
     evaluator_pop_fc7 = evaluator_pop_fc7/np.mean(evaluator_pop_fc7)
 
     evaluator1 = 1./4.*(evaluator_in + evaluator_conv2 + evaluator_conv5 + evaluator_fc7) 
-    + 1./4.(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_conv5 + evaluator_pop_fc7) # mixing fitnesses
+    + 1./4.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_conv5 + evaluator_pop_fc7) # mixing fitnesses
     #evaluator1 = evaluator_in + evaluator_fc7 + evaluator_len + 2*evaluator_pop_in + 2*evaluator_pop_fc7 # mixing fitnesses
     #evaluator = evaluator.tolist()
     evaluator = []
@@ -343,13 +342,13 @@ if __name__ == "__main__":
     ydim = train_y.shape[1]
 
     if os.path.isfile("bvlc_alexnet.npy"):
-    	net_data = load(open("bvlc_alexnet.npy", "rb"), encoding="latin1").item()
-    	print('Model intialised succesfully')
+        net_data = load(open("bvlc_alexnet.npy", "rb"), encoding="latin1").item()
+        print('Model intialised succesfully')
     else:
-    	print('Model not found. Beginning file download with urllib2...')
-    	url = 'https://www.cs.toronto.edu/~guerzhoy/tf_alexnet/bvlc_alexnet.npy'
-    	urllib.urlretrieve(url, 'bvlc_alexnet.npy') 
-    	print('Model succesfully downloaded')
+        print('Model not found. Beginning file download with urllib2...')
+        url = 'https://www.cs.toronto.edu/~guerzhoy/tf_alexnet/bvlc_alexnet.npy'
+        urllib.urlretrieve(url, 'bvlc_alexnet.npy') 
+        print('Model succesfully downloaded')
 
     net_data = load(open("bvlc_alexnet.npy", "rb"), encoding="latin1").item()
 
