@@ -32,17 +32,17 @@ global n_stim
 global stim_mat
 global fc7_stim_mat
 global n_ea 
-n_ea = 200
+n_ea = 300
 global nRuns
 global mRate
 global cRate
-nRuns= 200
+nRuns= 50
 mRate=0.25
 cRate=0.5
 global treesize_min
 global treesize_max
 treesize_min = 1
-treesize_max = 10
+treesize_max = 2
 global tourn_size
 tourn_size = 20
 
@@ -168,7 +168,9 @@ toolbox.register("select", tools.selTournament,tournsize=tourn_size)
 toolbox.register("mate", gp.cxOnePoint)
 toolbox.register("expr_mut", gp.genHalfAndHalf, min_=treesize_min, max_=treesize_max)
 toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
-toolbox.register("bloatcont", gp.staticLimit, key=operator.attrgetter('height'), max_value=17)
+
+toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
+toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
 
 ######### MAIN EXECUTION
 
