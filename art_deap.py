@@ -44,7 +44,7 @@ cRate=0.5
 global init_treesize_min
 global init_treesize_max
 init_treesize_min = 3
-init_treesize_max = 9
+init_treesize_max = 5
 global mut_treesize_min
 global mut_treesize_max
 mut_treesize_min = 0
