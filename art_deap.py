@@ -36,11 +36,11 @@ global fc7_stim_mat
 global conv2_stim_mat
 global conv5_stim_mat
 global n_ea 
-n_ea = 500
+n_ea = 300
 global nRuns
 global mRate
 global cRate
-nRuns= 300
+nRuns= 200
 mRate=0.1
 cRate=0.5
 global init_treesize_min
@@ -52,7 +52,7 @@ global mut_treesize_max
 mut_treesize_min = 0
 mut_treesize_max = 3
 global tourn_size
-tourn_size = 5
+tourn_size = 3
 
 ######### CREATING REQUIRED FUNCTIONS
 
@@ -114,7 +114,7 @@ def evalDum(offspring):
     evaluator_conv2 = np.zeros([len(offspring)])
     evaluator_conv5 = np.zeros([len(offspring)])
     evaluator_fc7 = np.zeros([len(offspring)])
-    #evaluator_len = np.zeros([len(offspring)])
+    evaluator_len = np.zeros([len(offspring)])
     evaluator_pop_in = np.zeros([len(offspring)])
     evaluator_pop_conv2 = np.zeros([len(offspring)])
     evaluator_pop_conv5 = np.zeros([len(offspring)])
@@ -160,7 +160,7 @@ def evalDum(offspring):
         evaluator_conv2[count] = conv2_sim[poke_ind,:]
         evaluator_conv5[count] = conv5_sim[poke_ind,:]
         evaluator_fc7[count] = fc7_sim[poke_ind,:]
-        #evaluator_len[count] = 1./(1.*len(str(ind)))
+        evaluator_len[count] = 1./(1.*len(str(ind)))
         #evaluator.append((1./14211.)*img_sim[poke_ind,:] + (1./220.)*fc7_sim[poke_ind,:] + 0.25*(1./0.0027)*1./(1.*len(str(individual))))
         count = count + 1
     count = 0
@@ -179,7 +179,7 @@ def evalDum(offspring):
     evaluator_conv2 = evaluator_conv2/np.mean(evaluator_conv2)
     evaluator_conv5 = evaluator_conv2/np.mean(evaluator_conv5)
     evaluator_fc7 = evaluator_fc7/np.mean(evaluator_fc7)
-    #evaluator_len = evaluator_len/np.mean(evaluator_len)
+    evaluator_len = evaluator_len/np.mean(evaluator_len)
     evaluator_pop_in = 1./(1.*evaluator_pop_in/(1.*(len(offspring)-1)))
     evaluator_pop_in = evaluator_pop_in/np.mean(evaluator_pop_in)
     evaluator_pop_conv2 = 1./(1.*evaluator_pop_conv2/(1.*(len(offspring)-1)))
@@ -190,7 +190,8 @@ def evalDum(offspring):
     evaluator_pop_fc7 = evaluator_pop_fc7/np.mean(evaluator_pop_fc7)
 
     evaluator1 = 1./4.*(evaluator_in + evaluator_conv2 + evaluator_conv5 + evaluator_fc7) 
-    + 1./4.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_conv5 + evaluator_pop_fc7) # mixing fitnesses
+    + 1./4.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_conv5 + evaluator_pop_fc7)
+    + evaluator_len # mixing fitnesses
     #evaluator1 = evaluator_in + evaluator_fc7 + evaluator_len + 2*evaluator_pop_in + 2*evaluator_pop_fc7 # mixing fitnesses
     #evaluator = evaluator.tolist()
     evaluator = []
