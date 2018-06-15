@@ -189,9 +189,12 @@ def evalDum(offspring):
     evaluator_pop_fc7 = 1./(1.*evaluator_pop_fc7/(1.*(len(offspring)-1)))
     evaluator_pop_fc7 = evaluator_pop_fc7/np.mean(evaluator_pop_fc7)
 
-    evaluator1 = 1./4.*(evaluator_in + evaluator_conv2 + evaluator_conv5 + evaluator_fc7) 
-    + 1./4.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_conv5 + evaluator_pop_fc7)
-    + evaluator_len # mixing fitnesses
+    #evaluator1 = 1./4.*(evaluator_in + evaluator_conv2 + evaluator_conv5 + evaluator_fc7) 
+    #+ 1./4.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_conv5 + evaluator_pop_fc7)
+    #+ 2.*evaluator_len # mixing fitnesses
+    evaluator1 = 1./3.*(evaluator_in + evaluator_conv2 + evaluator_fc7) 
+    + 2./3.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_fc7)
+    + 2.*evaluator_len # mixing fitnesses
     #evaluator1 = evaluator_in + evaluator_fc7 + evaluator_len + 2*evaluator_pop_in + 2*evaluator_pop_fc7 # mixing fitnesses
     #evaluator = evaluator.tolist()
     evaluator = []
