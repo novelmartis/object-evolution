@@ -36,12 +36,12 @@ global fc7_stim_mat
 global conv2_stim_mat
 global conv5_stim_mat
 global n_ea 
-n_ea = 500
+n_ea = 300
 global nRuns
 global mRate
 global cRate
-nRuns= 300
-mRate=0.1
+nRuns= 200
+mRate=0.25
 cRate=0.5
 global init_treesize_min
 global init_treesize_max
@@ -178,36 +178,48 @@ def evalDum(offspring):
 
     #pdb.set_trace()
 
-    evaluator_in = evaluator_in/np.mean(evaluator_in)
+    evaluator_in = evaluator_in/np.std(evaluator_in)
     #evaluator_conv2 = evaluator_conv2/np.mean(evaluator_conv2)
     #evaluator_conv5 = evaluator_conv2/np.mean(evaluator_conv5)
-    evaluator_fc7 = evaluator_fc7/np.mean(evaluator_fc7)
-    evaluator_len = evaluator_len/np.mean(evaluator_len)
+    evaluator_fc7 = evaluator_fc7/np.std(evaluator_fc7)
+    evaluator_len = evaluator_len/np.std(evaluator_len)
     evaluator_pop_in = 1./(1.*evaluator_pop_in/(1.*(len(offspring)-1)))
-    evaluator_pop_in = evaluator_pop_in/np.mean(evaluator_pop_in)
+    evaluator_pop_in = evaluator_pop_in/np.std(evaluator_pop_in)
     #evaluator_pop_conv2 = 1./(1.*evaluator_pop_conv2/(1.*(len(offspring)-1)))
     #evaluator_pop_conv2 = evaluator_pop_conv2/np.mean(evaluator_pop_conv2)
     #evaluator_pop_conv5 = 1./(1.*evaluator_pop_conv5/(1.*(len(offspring)-1)))
     #evaluator_pop_conv5 = evaluator_pop_conv5/np.mean(evaluator_pop_conv5)
     evaluator_pop_fc7 = 1./(1.*evaluator_pop_fc7/(1.*(len(offspring)-1)))
-    evaluator_pop_fc7 = evaluator_pop_fc7/np.mean(evaluator_pop_fc7)
+    evaluator_pop_fc7 = evaluator_pop_fc7/np.std(evaluator_pop_fc7)
 
     #evaluator1 = 1./4.*(evaluator_in + evaluator_conv2 + evaluator_conv5 + evaluator_fc7) 
     #+ 1./4.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_conv5 + evaluator_pop_fc7)
     #+ 2.*evaluator_len # mixing fitnesses
 
-    evaluator1 = 1./2.*(evaluator_in + evaluator_fc7) 
-    + 1./2.*(evaluator_pop_in + evaluator_pop_fc7)
-    + evaluator_len # mixing fitnesses
+    #evaluator1 = 1./2.*(evaluator_in + evaluator_fc7) 
+    #+ 1./2.*(evaluator_pop_in + evaluator_pop_fc7)
+    #+ evaluator_len # mixing fitnesses
+    evaluator1 = 0.*evaluator_in
 
     #evaluator1 = evaluator_in + evaluator_fc7 + evaluator_len + 2*evaluator_pop_in + 2*evaluator_pop_fc7 # mixing fitnesses
     #evaluator = evaluator.tolist()
+    
     evaluator = []
     for i in range(len(offspring)):
+        dum_hs = np.random.randint(1,6)
+        if dum_hs == 1:
+            evaluator1[i] = evaluator_in[i]
+        elif dum_hs == 2:
+            evaluator1[i] = evaluator_fc7[i]
+        elif dum_hs == 3:
+            evaluator1[i] = evaluator_pop_in[i]
+        elif dum_hs == 4:
+            evaluator1[i] = evaluator_pop_fc7[i]
+        elif dum_hs == 5:
+            evaluator1[i] = evaluator_len[i]
         if empty_flag[i] == 0:
-            evaluator1[i] = 1.
+            evaluator1[i] = 10.
         evaluator.append((np.array([evaluator1[i]]),))
-
 
     #pdb.set_trace()
 
@@ -458,8 +470,8 @@ if __name__ == "__main__":
 
     stim_mat = np.zeros([n_stim,img_dim*img_dim])
     fc7_stim_mat = np.zeros([n_stim,4096])
-    conv2_stim_mat = np.zeros([n_stim,200704])
-    conv5_stim_mat = np.zeros([n_stim,43264])
+    #conv2_stim_mat = np.zeros([n_stim,200704])
+    #conv5_stim_mat = np.zeros([n_stim,43264])
     for i in range(n_stim):
         im_inst = scipy.misc.imread('stimuli/pokemon-images-processed/'+input_dir[0])
         dim_inst = np.shape(im_inst)[0]
@@ -471,10 +483,10 @@ if __name__ == "__main__":
         im_inst = im_inst - mean(im_inst)
         fc7_inst = sess.run(fc7_read, feed_dict = {x:[im_inst,im_inst]})
         fc7_stim_mat[i,:] = fc7_inst[0,:]
-        conv2_inst = sess.run(conv2_in, feed_dict = {x:[im_inst,im_inst]})
-        conv2_stim_mat[i,:] = conv2_inst[0,:].flatten()
-        conv5_inst = sess.run(conv5_in, feed_dict = {x:[im_inst,im_inst]})
-        conv5_stim_mat[i,:] = conv5_inst[0,:].flatten()
+        #conv2_inst = sess.run(conv2_in, feed_dict = {x:[im_inst,im_inst]})
+        #conv2_stim_mat[i,:] = conv2_inst[0,:].flatten()
+        #conv5_inst = sess.run(conv5_in, feed_dict = {x:[im_inst,im_inst]})
+        #conv5_stim_mat[i,:] = conv5_inst[0,:].flatten()
 
     print('Done with pokemon intialisation')
 
