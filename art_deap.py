@@ -36,11 +36,11 @@ global fc7_stim_mat
 global conv2_stim_mat
 global conv5_stim_mat
 global n_ea 
-n_ea = 300
+n_ea = 500
 global nRuns
 global mRate
 global cRate
-nRuns= 200
+nRuns= 300
 mRate=0.1
 cRate=0.5
 global init_treesize_min
@@ -62,19 +62,19 @@ def sig_mod(x):
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
 
-def protectedDiv(left, right):
+def pD(left, right):
     try:
         return sig_mod(left / right)
     except ZeroDivisionError:
         return 1
 
-def protectedMult(left, right):
+def pM(left, right):
     return (left * right)
 
-def protectedAdd(left, right):
+def pA(left, right):
     return (left + right)/2.
 
-def protectedSubt(left, right):
+def pS(left, right):
     return ((left - right)+1.)/2.
 
 def evalDummy(individual): 
@@ -111,14 +111,15 @@ def evalDum(offspring):
     conv5_offspring = np.zeros([len(offspring),43264])
     fc7_offspring = np.zeros([len(offspring),4096])
     evaluator_in = np.zeros([len(offspring)])
-    evaluator_conv2 = np.zeros([len(offspring)])
-    evaluator_conv5 = np.zeros([len(offspring)])
+    #evaluator_conv2 = np.zeros([len(offspring)])
+    #evaluator_conv5 = np.zeros([len(offspring)])
     evaluator_fc7 = np.zeros([len(offspring)])
     evaluator_len = np.zeros([len(offspring)])
     evaluator_pop_in = np.zeros([len(offspring)])
-    evaluator_pop_conv2 = np.zeros([len(offspring)])
-    evaluator_pop_conv5 = np.zeros([len(offspring)])
+    #evaluator_pop_conv2 = np.zeros([len(offspring)])
+    #evaluator_pop_conv5 = np.zeros([len(offspring)])
     evaluator_pop_fc7 = np.zeros([len(offspring)])
+    empty_flag = np.ones([len(offspring)])
     for ind in offspring:
         FusedIm = eval(str(ind).replace('\'',''),{'__builtins__':None},dispatch)
         FusedIm = np.array(FusedIm)
@@ -128,6 +129,8 @@ def evalDum(offspring):
         FusedIm[FusedIm==20] = 255
         FusedIm[FusedIm==15] = 0
         in_offspring[count,:,:] = FusedIm
+        if np.sum(FusedIm) == 0:
+            empty_flag[count] = 0
         im_inst = np.zeros([np.shape(FusedIm)[0],np.shape(FusedIm)[0],3])
         im_inst[:,:,0] = FusedIm
         im_inst[:,:,1] = FusedIm
@@ -138,27 +141,27 @@ def evalDum(offspring):
         fc7_inst1 = sess.run(fc7_read, feed_dict = {x:[im_inst,im_inst]})
         fc7_inst = fc7_inst1[0,:]
         fc7_offspring[count,:] = fc7_inst
-        conv2_inst1 = sess.run(conv2_in, feed_dict = {x:[im_inst,im_inst]})
-        conv2_inst = conv2_inst1[0,:].flatten()
-        conv2_offspring[count,:] = conv2_inst
-        conv5_inst1 = sess.run(conv5_in, feed_dict = {x:[im_inst,im_inst]})
-        conv5_inst = conv5_inst1[0,:].flatten()
-        conv5_offspring[count,:] = conv5_inst
+        #conv2_inst1 = sess.run(conv2_in, feed_dict = {x:[im_inst,im_inst]})
+        #conv2_inst = conv2_inst1[0,:].flatten()
+        #conv2_offspring[count,:] = conv2_inst
+        #conv5_inst1 = sess.run(conv5_in, feed_dict = {x:[im_inst,im_inst]})
+        #conv5_inst = conv5_inst1[0,:].flatten()
+        #conv5_offspring[count,:] = conv5_inst
         img_sim = zeros([n_stim,1])
-        conv2_sim = zeros([n_stim,1])
-        conv5_sim = zeros([n_stim,1])
+        #conv2_sim = zeros([n_stim,1])
+        #conv5_sim = zeros([n_stim,1])
         fc7_sim = zeros([n_stim,1])
         for i in range(n_stim): 
             img_sim[i,0] = (np.sum((np.reshape(FusedIm,[1,img_dim*img_dim])-stim_mat[i,:])**2))**0.5
-            conv2_sim[i,0] = (np.sum((conv2_inst-conv2_stim_mat[i,:])**2))**0.5
-            conv5_sim[i,0] = (np.sum((conv5_inst-conv5_stim_mat[i,:])**2))**0.5
+            #conv2_sim[i,0] = (np.sum((conv2_inst-conv2_stim_mat[i,:])**2))**0.5
+            #conv5_sim[i,0] = (np.sum((conv5_inst-conv5_stim_mat[i,:])**2))**0.5
             fc7_sim[i,0] = (np.sum((fc7_inst-fc7_stim_mat[i,:])**2))**0.5
         #evaluator = np.min(img_sim) + np.min(fc7_sim) # can add novelty term here
         poke_ind = np.random.randint(n_stim)
         #poke_ind = 21
         evaluator_in[count] = img_sim[poke_ind,:]
-        evaluator_conv2[count] = conv2_sim[poke_ind,:]
-        evaluator_conv5[count] = conv5_sim[poke_ind,:]
+        #evaluator_conv2[count] = conv2_sim[poke_ind,:]
+        #evaluator_conv5[count] = conv5_sim[poke_ind,:]
         evaluator_fc7[count] = fc7_sim[poke_ind,:]
         evaluator_len[count] = 1./(1.*len(str(ind)))
         #evaluator.append((1./14211.)*img_sim[poke_ind,:] + (1./220.)*fc7_sim[poke_ind,:] + 0.25*(1./0.0027)*1./(1.*len(str(individual))))
@@ -168,37 +171,41 @@ def evalDum(offspring):
         for i in range(len(offspring)):
             if count != i:
                 evaluator_pop_in[count] = evaluator_pop_in[count] + (np.sum((np.reshape(in_offspring[count,:,:],[1,img_dim*img_dim])-np.reshape(in_offspring[i,:,:],[1,img_dim*img_dim]))**2))**0.5
-                evaluator_pop_conv2[count] = evaluator_pop_conv2[count] + (np.sum((conv2_offspring[count,:]-conv2_offspring[i,:])**2))**0.5
-                evaluator_pop_conv5[count] = evaluator_pop_conv5[count] + (np.sum((conv5_offspring[count,:]-conv5_offspring[i,:])**2))**0.5
+                #evaluator_pop_conv2[count] = evaluator_pop_conv2[count] + (np.sum((conv2_offspring[count,:]-conv2_offspring[i,:])**2))**0.5
+                #evaluator_pop_conv5[count] = evaluator_pop_conv5[count] + (np.sum((conv5_offspring[count,:]-conv5_offspring[i,:])**2))**0.5
                 evaluator_pop_fc7[count] = evaluator_pop_fc7[count] + (np.sum((fc7_offspring[count,:]-fc7_offspring[i,:])**2))**0.5
         count = count + 1
 
     #pdb.set_trace()
 
     evaluator_in = evaluator_in/np.mean(evaluator_in)
-    evaluator_conv2 = evaluator_conv2/np.mean(evaluator_conv2)
-    evaluator_conv5 = evaluator_conv2/np.mean(evaluator_conv5)
+    #evaluator_conv2 = evaluator_conv2/np.mean(evaluator_conv2)
+    #evaluator_conv5 = evaluator_conv2/np.mean(evaluator_conv5)
     evaluator_fc7 = evaluator_fc7/np.mean(evaluator_fc7)
     evaluator_len = evaluator_len/np.mean(evaluator_len)
     evaluator_pop_in = 1./(1.*evaluator_pop_in/(1.*(len(offspring)-1)))
     evaluator_pop_in = evaluator_pop_in/np.mean(evaluator_pop_in)
-    evaluator_pop_conv2 = 1./(1.*evaluator_pop_conv2/(1.*(len(offspring)-1)))
-    evaluator_pop_conv2 = evaluator_pop_conv2/np.mean(evaluator_pop_conv2)
-    evaluator_pop_conv5 = 1./(1.*evaluator_pop_conv5/(1.*(len(offspring)-1)))
-    evaluator_pop_conv5 = evaluator_pop_conv5/np.mean(evaluator_pop_conv5)
+    #evaluator_pop_conv2 = 1./(1.*evaluator_pop_conv2/(1.*(len(offspring)-1)))
+    #evaluator_pop_conv2 = evaluator_pop_conv2/np.mean(evaluator_pop_conv2)
+    #evaluator_pop_conv5 = 1./(1.*evaluator_pop_conv5/(1.*(len(offspring)-1)))
+    #evaluator_pop_conv5 = evaluator_pop_conv5/np.mean(evaluator_pop_conv5)
     evaluator_pop_fc7 = 1./(1.*evaluator_pop_fc7/(1.*(len(offspring)-1)))
     evaluator_pop_fc7 = evaluator_pop_fc7/np.mean(evaluator_pop_fc7)
 
     #evaluator1 = 1./4.*(evaluator_in + evaluator_conv2 + evaluator_conv5 + evaluator_fc7) 
     #+ 1./4.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_conv5 + evaluator_pop_fc7)
     #+ 2.*evaluator_len # mixing fitnesses
-    evaluator1 = 1./3.*(evaluator_in + evaluator_conv2 + evaluator_fc7) 
-    + 2./3.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_fc7)
-    + 2.*evaluator_len # mixing fitnesses
+
+    evaluator1 = 1./2.*(evaluator_in + evaluator_fc7) 
+    + 1./2.*(evaluator_pop_in + evaluator_pop_fc7)
+    + evaluator_len # mixing fitnesses
+
     #evaluator1 = evaluator_in + evaluator_fc7 + evaluator_len + 2*evaluator_pop_in + 2*evaluator_pop_fc7 # mixing fitnesses
     #evaluator = evaluator.tolist()
     evaluator = []
     for i in range(len(offspring)):
+        if empty_flag[i] == 0:
+            evaluator1[i] = 1.
         evaluator.append((np.array([evaluator1[i]]),))
 
 
@@ -280,8 +287,8 @@ def main():
 
 ######## REGISTERING REQUIRED FUNCTIONS FOR GRAPHICS UNIT
 
-dispatch ={'Tx':Tx,'Ty':Ty,'R':R,'Sx':Sx,'Sy':Sy,'SF':SF,'TF':TF,'OCCL':OCCL,'P':P,'protectedAdd':protectedAdd,'protectedSubt':protectedSubt,
-'protectedMult':protectedMult,'protectedDiv':protectedDiv,'Circle':Circle}
+dispatch ={'Tx':Tx,'Ty':Ty,'R0':R0,'Sx':Sx,'Sy':Sy,'SF':SF,'TF':TF,'OC':OC,'P':P,'pA':pA,'pS':pS,
+'pM':pM,'pD':pD,'C':C}
 
 ######## EA STUF
 
@@ -290,17 +297,17 @@ dispatch ={'Tx':Tx,'Ty':Ty,'R':R,'Sx':Sx,'Sy':Sy,'SF':SF,'TF':TF,'OCCL':OCCL,'P'
 pset = gp.PrimitiveSetTyped("main", [], str) 
 pset.addPrimitive(Tx, [str, float], str)
 pset.addPrimitive(Ty, [str, float], str)
-pset.addPrimitive(R, [str, float], str)
+pset.addPrimitive(R0, [str, float], str)
 pset.addPrimitive(Sx, [str, float], str)
 pset.addPrimitive(Sy, [str, float], str)
 pset.addPrimitive(SF, [str, str], str)
 pset.addPrimitive(TF, [str, str], str)
-pset.addPrimitive(OCCL, [str, str], str)
+pset.addPrimitive(OC, [str, str], str)
 
-pset.addPrimitive(protectedAdd, [float,float], float)
-pset.addPrimitive(protectedSubt, [float,float], float)
-pset.addPrimitive(protectedMult, [float,float], float)
-pset.addPrimitive(protectedDiv, [float,float], float)
+#pset.addPrimitive(pA, [float,float], float)
+#pset.addPrimitive(pS, [float,float], float)
+pset.addPrimitive(pM, [float,float], float)
+#pset.addPrimitive(pD, [float,float], float)
 
 # TERMINALS
 
@@ -309,7 +316,7 @@ pset.addTerminal("P(3)",str)
 pset.addTerminal("P(4)",str)
 pset.addTerminal("P(5)",str)
 pset.addTerminal("P(6)",str)
-pset.addTerminal("Circle()",str)
+pset.addTerminal("C()",str)
 
 for i in np.linspace(0,1,50):
     pset.addTerminal(i,float)
