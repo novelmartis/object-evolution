@@ -38,6 +38,10 @@ global conv5_stim_mat
 global n_ea 
 n_ea = 300
 global nRuns
+global noise_inj
+global noise_injector
+noise_injector = 0
+noise_inj = 25
 global mRate
 global cRate
 nRuns= 200
@@ -111,13 +115,13 @@ def evalDum(offspring):
     conv5_offspring = np.zeros([len(offspring),43264])
     fc7_offspring = np.zeros([len(offspring),4096])
     evaluator_in = np.zeros([len(offspring)])
-    #evaluator_conv2 = np.zeros([len(offspring)])
-    #evaluator_conv5 = np.zeros([len(offspring)])
+    evaluator_conv2 = np.zeros([len(offspring)])
+    evaluator_conv5 = np.zeros([len(offspring)])
     evaluator_fc7 = np.zeros([len(offspring)])
     evaluator_len = np.zeros([len(offspring)])
     evaluator_pop_in = np.zeros([len(offspring)])
-    #evaluator_pop_conv2 = np.zeros([len(offspring)])
-    #evaluator_pop_conv5 = np.zeros([len(offspring)])
+    evaluator_pop_conv2 = np.zeros([len(offspring)])
+    evaluator_pop_conv5 = np.zeros([len(offspring)])
     evaluator_pop_fc7 = np.zeros([len(offspring)])
     empty_flag = np.ones([len(offspring)])
     for ind in offspring:
@@ -141,27 +145,27 @@ def evalDum(offspring):
         fc7_inst1 = sess.run(fc7_read, feed_dict = {x:[im_inst,im_inst]})
         fc7_inst = fc7_inst1[0,:]
         fc7_offspring[count,:] = fc7_inst
-        #conv2_inst1 = sess.run(conv2_in, feed_dict = {x:[im_inst,im_inst]})
-        #conv2_inst = conv2_inst1[0,:].flatten()
-        #conv2_offspring[count,:] = conv2_inst
-        #conv5_inst1 = sess.run(conv5_in, feed_dict = {x:[im_inst,im_inst]})
-        #conv5_inst = conv5_inst1[0,:].flatten()
-        #conv5_offspring[count,:] = conv5_inst
+        conv2_inst1 = sess.run(conv2_in, feed_dict = {x:[im_inst,im_inst]})
+        conv2_inst = conv2_inst1[0,:].flatten()
+        conv2_offspring[count,:] = conv2_inst
+        conv5_inst1 = sess.run(conv5_in, feed_dict = {x:[im_inst,im_inst]})
+        conv5_inst = conv5_inst1[0,:].flatten()
+        conv5_offspring[count,:] = conv5_inst
         img_sim = zeros([n_stim,1])
-        #conv2_sim = zeros([n_stim,1])
-        #conv5_sim = zeros([n_stim,1])
+        conv2_sim = zeros([n_stim,1])
+        conv5_sim = zeros([n_stim,1])
         fc7_sim = zeros([n_stim,1])
         for i in range(n_stim): 
             img_sim[i,0] = (np.sum((np.reshape(FusedIm,[1,img_dim*img_dim])-stim_mat[i,:])**2))**0.5
-            #conv2_sim[i,0] = (np.sum((conv2_inst-conv2_stim_mat[i,:])**2))**0.5
-            #conv5_sim[i,0] = (np.sum((conv5_inst-conv5_stim_mat[i,:])**2))**0.5
+            conv2_sim[i,0] = (np.sum((conv2_inst-conv2_stim_mat[i,:])**2))**0.5
+            conv5_sim[i,0] = (np.sum((conv5_inst-conv5_stim_mat[i,:])**2))**0.5
             fc7_sim[i,0] = (np.sum((fc7_inst-fc7_stim_mat[i,:])**2))**0.5
         #evaluator = np.min(img_sim) + np.min(fc7_sim) # can add novelty term here
         poke_ind = np.random.randint(n_stim)
         #poke_ind = 21
         evaluator_in[count] = img_sim[poke_ind,:]
-        #evaluator_conv2[count] = conv2_sim[poke_ind,:]
-        #evaluator_conv5[count] = conv5_sim[poke_ind,:]
+        evaluator_conv2[count] = conv2_sim[poke_ind,:]
+        evaluator_conv5[count] = conv5_sim[poke_ind,:]
         evaluator_fc7[count] = fc7_sim[poke_ind,:]
         evaluator_len[count] = 1./(1.*len(str(ind)))
         #evaluator.append((1./14211.)*img_sim[poke_ind,:] + (1./220.)*fc7_sim[poke_ind,:] + 0.25*(1./0.0027)*1./(1.*len(str(individual))))
@@ -171,24 +175,24 @@ def evalDum(offspring):
         for i in range(len(offspring)):
             if count != i:
                 evaluator_pop_in[count] = evaluator_pop_in[count] + (np.sum((np.reshape(in_offspring[count,:,:],[1,img_dim*img_dim])-np.reshape(in_offspring[i,:,:],[1,img_dim*img_dim]))**2))**0.5
-                #evaluator_pop_conv2[count] = evaluator_pop_conv2[count] + (np.sum((conv2_offspring[count,:]-conv2_offspring[i,:])**2))**0.5
-                #evaluator_pop_conv5[count] = evaluator_pop_conv5[count] + (np.sum((conv5_offspring[count,:]-conv5_offspring[i,:])**2))**0.5
+                evaluator_pop_conv2[count] = evaluator_pop_conv2[count] + (np.sum((conv2_offspring[count,:]-conv2_offspring[i,:])**2))**0.5
+                evaluator_pop_conv5[count] = evaluator_pop_conv5[count] + (np.sum((conv5_offspring[count,:]-conv5_offspring[i,:])**2))**0.5
                 evaluator_pop_fc7[count] = evaluator_pop_fc7[count] + (np.sum((fc7_offspring[count,:]-fc7_offspring[i,:])**2))**0.5
         count = count + 1
 
     #pdb.set_trace()
 
     evaluator_in = evaluator_in/np.std(evaluator_in)
-    #evaluator_conv2 = evaluator_conv2/np.mean(evaluator_conv2)
-    #evaluator_conv5 = evaluator_conv2/np.mean(evaluator_conv5)
+    evaluator_conv2 = evaluator_conv2/np.std(evaluator_conv2)
+    evaluator_conv5 = evaluator_conv2/np.std(evaluator_conv5)
     evaluator_fc7 = evaluator_fc7/np.std(evaluator_fc7)
     evaluator_len = evaluator_len/np.std(evaluator_len)
     evaluator_pop_in = 1./(1.*evaluator_pop_in/(1.*(len(offspring)-1)))
     evaluator_pop_in = evaluator_pop_in/np.std(evaluator_pop_in)
-    #evaluator_pop_conv2 = 1./(1.*evaluator_pop_conv2/(1.*(len(offspring)-1)))
-    #evaluator_pop_conv2 = evaluator_pop_conv2/np.mean(evaluator_pop_conv2)
-    #evaluator_pop_conv5 = 1./(1.*evaluator_pop_conv5/(1.*(len(offspring)-1)))
-    #evaluator_pop_conv5 = evaluator_pop_conv5/np.mean(evaluator_pop_conv5)
+    evaluator_pop_conv2 = 1./(1.*evaluator_pop_conv2/(1.*(len(offspring)-1)))
+    evaluator_pop_conv2 = evaluator_pop_conv2/np.std(evaluator_pop_conv2)
+    evaluator_pop_conv5 = 1./(1.*evaluator_pop_conv5/(1.*(len(offspring)-1)))
+    evaluator_pop_conv5 = evaluator_pop_conv5/np.std(evaluator_pop_conv5)
     evaluator_pop_fc7 = 1./(1.*evaluator_pop_fc7/(1.*(len(offspring)-1)))
     evaluator_pop_fc7 = evaluator_pop_fc7/np.std(evaluator_pop_fc7)
 
@@ -209,13 +213,18 @@ def evalDum(offspring):
         dum_hs = np.random.random(1)[0]
         if dum_hs < 0.25:
             dum_hs1 = np.random.random(1)[0]
-            if dum_hs1 < 0.5:
+            if dum_hs1 < 0.33:
                 evaluator1[i] = evaluator_in[i]
+            elif dum_hs1 < 0.66:
+                evaluator1[i] = evaluator_conv5[i]
             else:
                 evaluator1[i] = evaluator_fc7[i]
         elif dum_hs < 0.75:
-            if dum_hs1 < 0.5:
+            dum_hs1 = np.random.random(1)[0]
+            if dum_hs1 < 0.33:
                 evaluator1[i] = evaluator_pop_in[i]
+            elif dum_hs1 < 0.66:
+                evaluator1[i] = evaluator_pop_conv5[i]
             else:
                 evaluator1[i] = evaluator_pop_fc7[i]
         else:
@@ -265,6 +274,17 @@ def eaSimple1(population, toolbox, cxpb, mutpb, ngen, stats=None,
         fitnesses = evalDum(invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
+
+        if noise_injector == 1:
+            if gen % noise_inj == 0:
+                pop2 = toolbox.population(n=len(offspring)/4)
+                invalid_ind2 = [ind for ind in pop2 if not ind.fitness.valid]
+                fitnesses2 = evalDum(invalid_ind2)
+                for ind, fit in zip(invalid_ind2, fitnesses2):
+                    ind.fitness.values = fit
+                bothpops = offspring + pop2
+                offspring = bothpops
+                del pop2, bothpops
 
         # Update the hall of fame with the generated individuals
         if halloffame is not None:
@@ -473,8 +493,8 @@ if __name__ == "__main__":
 
     stim_mat = np.zeros([n_stim,img_dim*img_dim])
     fc7_stim_mat = np.zeros([n_stim,4096])
-    #conv2_stim_mat = np.zeros([n_stim,200704])
-    #conv5_stim_mat = np.zeros([n_stim,43264])
+    conv2_stim_mat = np.zeros([n_stim,200704])
+    conv5_stim_mat = np.zeros([n_stim,43264])
     for i in range(n_stim):
         im_inst = scipy.misc.imread('stimuli/pokemon-images-processed/'+input_dir[0])
         dim_inst = np.shape(im_inst)[0]
@@ -486,10 +506,10 @@ if __name__ == "__main__":
         im_inst = im_inst - mean(im_inst)
         fc7_inst = sess.run(fc7_read, feed_dict = {x:[im_inst,im_inst]})
         fc7_stim_mat[i,:] = fc7_inst[0,:]
-        #conv2_inst = sess.run(conv2_in, feed_dict = {x:[im_inst,im_inst]})
-        #conv2_stim_mat[i,:] = conv2_inst[0,:].flatten()
-        #conv5_inst = sess.run(conv5_in, feed_dict = {x:[im_inst,im_inst]})
-        #conv5_stim_mat[i,:] = conv5_inst[0,:].flatten()
+        conv2_inst = sess.run(conv2_in, feed_dict = {x:[im_inst,im_inst]})
+        conv2_stim_mat[i,:] = conv2_inst[0,:].flatten()
+        conv5_inst = sess.run(conv5_in, feed_dict = {x:[im_inst,im_inst]})
+        conv5_stim_mat[i,:] = conv5_inst[0,:].flatten()
 
     print('Done with pokemon intialisation')
 
