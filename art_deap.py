@@ -206,16 +206,19 @@ def evalDum(offspring):
     
     evaluator = []
     for i in range(len(offspring)):
-        dum_hs = np.random.randint(1,6)
-        if dum_hs == 1:
-            evaluator1[i] = evaluator_in[i]
-        elif dum_hs == 2:
-            evaluator1[i] = evaluator_fc7[i]
-        elif dum_hs == 3:
-            evaluator1[i] = evaluator_pop_in[i]
-        elif dum_hs == 4:
-            evaluator1[i] = evaluator_pop_fc7[i]
-        elif dum_hs == 5:
+        dum_hs = np.random.random(1)[0]
+        if dum_hs < 0.25:
+            dum_hs1 = np.random.random(1)[0]
+            if dum_hs1 < 0.5:
+                evaluator1[i] = evaluator_in[i]
+            else:
+                evaluator1[i] = evaluator_fc7[i]
+        elif dum_hs < 0.75:
+            if dum_hs1 < 0.5:
+                evaluator1[i] = evaluator_pop_in[i]
+            else:
+                evaluator1[i] = evaluator_pop_fc7[i]
+        else:
             evaluator1[i] = evaluator_len[i]
         if empty_flag[i] == 0:
             evaluator1[i] = 10.
@@ -316,9 +319,9 @@ pset.addPrimitive(SF, [str, str], str)
 pset.addPrimitive(TF, [str, str], str)
 pset.addPrimitive(OC, [str, str], str)
 
-#pset.addPrimitive(pA, [float,float], float)
-#pset.addPrimitive(pS, [float,float], float)
-pset.addPrimitive(pM, [float,float], float)
+pset.addPrimitive(pA, [float,float], float)
+pset.addPrimitive(pS, [float,float], float)
+#pset.addPrimitive(pM, [float,float], float)
 #pset.addPrimitive(pD, [float,float], float)
 
 # TERMINALS
