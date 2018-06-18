@@ -512,7 +512,9 @@ if __name__ == "__main__":
     ## RUN THE EA AND OUPUT STATS AND IMAGES
 
     pop, log, hof = main()
+    count = 0
     for i in pop:
+        count = count + 1
         #print(i)
         FusedIm = eval(str(i).replace('\'',''),{'__builtins__':None},dispatch)
         FusedIm = np.array(FusedIm)
@@ -521,5 +523,5 @@ if __name__ == "__main__":
         FusedIm[FusedIm==0] = 255
         FusedIm[FusedIm==20] = 255
         FusedIm[FusedIm==15] = 0
-        FusedIm = Image.fromarray(FusedIm)
-        FusedIm.show()
+        str_h = 'run_full/'+str(count)+'.png'
+        scipy.misc.imsave(str_h,FusedIm)
