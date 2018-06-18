@@ -213,18 +213,14 @@ def evalDum(offspring):
         dum_hs = np.random.random(1)[0]
         if dum_hs < 0.25:
             dum_hs1 = np.random.random(1)[0]
-            if dum_hs1 < 0.33:
+            if dum_hs1 < 0.5:
                 evaluator1[i] = evaluator_in[i]
-            elif dum_hs1 < 0.66:
-                evaluator1[i] = evaluator_conv5[i]
             else:
                 evaluator1[i] = evaluator_fc7[i]
         elif dum_hs < 0.75:
             dum_hs1 = np.random.random(1)[0]
-            if dum_hs1 < 0.33:
+            if dum_hs1 < 0.5:
                 evaluator1[i] = evaluator_pop_in[i]
-            elif dum_hs1 < 0.66:
-                evaluator1[i] = evaluator_pop_conv5[i]
             else:
                 evaluator1[i] = evaluator_pop_fc7[i]
         else:
@@ -496,11 +492,11 @@ if __name__ == "__main__":
     conv2_stim_mat = np.zeros([n_stim,200704])
     conv5_stim_mat = np.zeros([n_stim,43264])
     for i in range(n_stim):
-        im_inst = scipy.misc.imread('stimuli/pokemon-images-processed/'+input_dir[0])
+        im_inst = scipy.misc.imread('stimuli/pokemon-images-processed/'+input_dir[i])
         dim_inst = np.shape(im_inst)[0]
         im_inst = scipy.misc.imresize(im_inst,img_dim*1./dim_inst*1.)
         stim_mat[i,:] = np.reshape(im_inst,[1,img_dim*img_dim])
-        im_inst = scipy.misc.imread('stimuli/pokemon-images-processed/'+input_dir[0],mode='RGB')
+        im_inst = scipy.misc.imread('stimuli/pokemon-images-processed/'+input_dir[i],mode='RGB')
         dim_inst = np.shape(im_inst)[0]
         im_inst = (scipy.misc.imresize(im_inst,227*1./dim_inst*1.)).astype('float32')
         im_inst = im_inst - mean(im_inst)
