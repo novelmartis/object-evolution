@@ -26,7 +26,7 @@ def P(a):
 
     return image
 
-def Circle():
+def C():
 
     image = Image.new("L",(200,200),"black")
     draw = ImageDraw.Draw(image)
@@ -38,7 +38,7 @@ def Circle():
 
 ## transformations
 
-def OCCL(im1,im2):
+def OC(im1,im2):
     im1 = np.array(im1)
     im1[im1<15] = 0
     im1[im1>15] = 20
@@ -61,7 +61,7 @@ def OCCL(im1,im2):
     fusedim = Image.fromarray(fusedim)
     return fusedim
 
-def R(im,theta):
+def R0(im,theta):
 
     theta *= 360
     im = im.convert('RGBA')
@@ -77,7 +77,7 @@ def R(im,theta):
 
 def Sx(im,scale):
 
-    scale = scale*2.5+0.5 # range between 0.5 and 3
+    scale = scale*2+0.5 # range between 0.5 and 2.5
     im_w, im_h = im.size
     scaled_w = round(im_w * scale)
     scaledim = im.resize((int(scaled_w), im_h)) #resample = Image.BICUBIC)
@@ -92,7 +92,7 @@ def Sx(im,scale):
 
 def Sy(im,scale):
 
-    scale = scale*2.5+0.5 # range between 0.5 and 1.5
+    scale = scale*2+0.5 # range between 0.5 and 2.5
     im_w, im_h = im.size
     scaled_h = round(im_h * scale)
     scaledim = im.resize((im_w, int(scaled_h))) #resample = Image.BICUBIC)
@@ -107,7 +107,7 @@ def Sy(im,scale):
 
 def Tx(im,offset):
 
-    offset = offset*200 - 100 # or whatever
+    offset = offset*100 - 50 # or whatever
     im_w, im_h = im.size
     shiftedim = Image.new('L', (im_w, im_h),0)
     shiftedim.paste(im, (int(offset),0))
@@ -119,7 +119,7 @@ def Tx(im,offset):
 
 def Ty(im,offset):
 
-    offset = offset*200 - 100 # or whatever
+    offset = offset*100 - 50 # or whatever
     im_w, im_h = im.size
     shiftedim = Image.new('L', (im_w, im_h),0)
     shiftedim.paste(im, (0,int(offset)))

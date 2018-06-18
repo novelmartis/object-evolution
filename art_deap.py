@@ -4,6 +4,7 @@ import random
 import operator
 import math
 from deap import algorithms
+from deap.algorithms import *
 from deap import base
 from deap import creator 
 from deap import tools
@@ -23,6 +24,7 @@ import scipy.misc
 import tensorflow as tf
 from caffe_classes import class_names
 from graphics_deap import *
+import pdb
 
 ######### INITIALISING GLOBAL VARIABLES
 
@@ -31,20 +33,26 @@ img_dim = 200
 global n_stim
 global stim_mat
 global fc7_stim_mat
+global conv2_stim_mat
+global conv5_stim_mat
 global n_ea 
 n_ea = 300
 global nRuns
 global mRate
 global cRate
-nRuns= 50
+nRuns= 200
 mRate=0.25
 cRate=0.5
-global treesize_min
-global treesize_max
-treesize_min = 1
-treesize_max = 2
+global init_treesize_min
+global init_treesize_max
+init_treesize_min = 3
+init_treesize_max = 8
+global mut_treesize_min
+global mut_treesize_max
+mut_treesize_min = 0
+mut_treesize_max = 3
 global tourn_size
-tourn_size = 20
+tourn_size = 3
 
 ######### CREATING REQUIRED FUNCTIONS
 
@@ -54,19 +62,19 @@ def sig_mod(x):
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
 
-def protectedDiv(left, right):
+def pD(left, right):
     try:
         return sig_mod(left / right)
     except ZeroDivisionError:
         return 1
 
-def protectedMult(left, right):
+def pM(left, right):
     return (left * right)
 
-def protectedAdd(left, right):
+def pA(left, right):
     return (left + right)/2.
 
-def protectedSubt(left, right):
+def pS(left, right):
     return ((left - right)+1.)/2.
 
 def evalDummy(individual): 
@@ -91,12 +99,184 @@ def evalDummy(individual):
         img_sim[i,0] = (np.sum((np.reshape(FusedIm,[1,img_dim*img_dim])-stim_mat[i,:])**2))**0.5
         fc7_sim[i,0] = (np.sum((fc7_inst-fc7_stim_mat[i,:])**2))**0.5
     #evaluator = np.min(img_sim) + np.min(fc7_sim) # can add novelty term here
-    poke_ind = np.random.randint(n_stim)
-    #evaluator = img_sim[poke_ind,:]*1./56. + fc7_sim[poke_ind,:] # can add novelty term here
-    #evaluator = fc7_sim[poke_ind,:] # can add novelty term here
-    evaluator = fc7_sim[poke_ind,:] + 1./2.*250./0.015*1./(1.*len(str(individual))) # can add novelty term here, one-half the influence of string length
-    #evaluator = 1./(1.*len(str(individual)))
+    #poke_ind = np.random.randint(n_stim)
+    poke_ind = 21
+    evaluator = (1./14211.)*img_sim[poke_ind,:] + (1./220.)*fc7_sim[poke_ind,:] + 0.25*(1./0.0027)*1./(1.*len(str(individual)))
     return evaluator,
+
+def evalDum(offspring): 
+    count = 0
+    in_offspring = np.zeros([len(offspring),img_dim,img_dim])
+    conv2_offspring = np.zeros([len(offspring),200704])
+    conv5_offspring = np.zeros([len(offspring),43264])
+    fc7_offspring = np.zeros([len(offspring),4096])
+    evaluator_in = np.zeros([len(offspring)])
+    #evaluator_conv2 = np.zeros([len(offspring)])
+    #evaluator_conv5 = np.zeros([len(offspring)])
+    evaluator_fc7 = np.zeros([len(offspring)])
+    evaluator_len = np.zeros([len(offspring)])
+    evaluator_pop_in = np.zeros([len(offspring)])
+    #evaluator_pop_conv2 = np.zeros([len(offspring)])
+    #evaluator_pop_conv5 = np.zeros([len(offspring)])
+    evaluator_pop_fc7 = np.zeros([len(offspring)])
+    empty_flag = np.ones([len(offspring)])
+    for ind in offspring:
+        FusedIm = eval(str(ind).replace('\'',''),{'__builtins__':None},dispatch)
+        FusedIm = np.array(FusedIm)
+        FusedIm[FusedIm<15] = 0
+        FusedIm[FusedIm>15] = 20 
+        FusedIm[FusedIm==0] = 255
+        FusedIm[FusedIm==20] = 255
+        FusedIm[FusedIm==15] = 0
+        in_offspring[count,:,:] = FusedIm
+        if np.sum(FusedIm) == 0:
+            empty_flag[count] = 0
+        im_inst = np.zeros([np.shape(FusedIm)[0],np.shape(FusedIm)[0],3])
+        im_inst[:,:,0] = FusedIm
+        im_inst[:,:,1] = FusedIm
+        im_inst[:,:,2] = FusedIm
+        dim_inst = np.shape(im_inst)[0]
+        im_inst = scipy.misc.imresize(im_inst,227*1./dim_inst*1.)
+        im_inst = im_inst - mean(im_inst)
+        fc7_inst1 = sess.run(fc7_read, feed_dict = {x:[im_inst,im_inst]})
+        fc7_inst = fc7_inst1[0,:]
+        fc7_offspring[count,:] = fc7_inst
+        #conv2_inst1 = sess.run(conv2_in, feed_dict = {x:[im_inst,im_inst]})
+        #conv2_inst = conv2_inst1[0,:].flatten()
+        #conv2_offspring[count,:] = conv2_inst
+        #conv5_inst1 = sess.run(conv5_in, feed_dict = {x:[im_inst,im_inst]})
+        #conv5_inst = conv5_inst1[0,:].flatten()
+        #conv5_offspring[count,:] = conv5_inst
+        img_sim = zeros([n_stim,1])
+        #conv2_sim = zeros([n_stim,1])
+        #conv5_sim = zeros([n_stim,1])
+        fc7_sim = zeros([n_stim,1])
+        for i in range(n_stim): 
+            img_sim[i,0] = (np.sum((np.reshape(FusedIm,[1,img_dim*img_dim])-stim_mat[i,:])**2))**0.5
+            #conv2_sim[i,0] = (np.sum((conv2_inst-conv2_stim_mat[i,:])**2))**0.5
+            #conv5_sim[i,0] = (np.sum((conv5_inst-conv5_stim_mat[i,:])**2))**0.5
+            fc7_sim[i,0] = (np.sum((fc7_inst-fc7_stim_mat[i,:])**2))**0.5
+        #evaluator = np.min(img_sim) + np.min(fc7_sim) # can add novelty term here
+        poke_ind = np.random.randint(n_stim)
+        #poke_ind = 21
+        evaluator_in[count] = img_sim[poke_ind,:]
+        #evaluator_conv2[count] = conv2_sim[poke_ind,:]
+        #evaluator_conv5[count] = conv5_sim[poke_ind,:]
+        evaluator_fc7[count] = fc7_sim[poke_ind,:]
+        evaluator_len[count] = 1./(1.*len(str(ind)))
+        #evaluator.append((1./14211.)*img_sim[poke_ind,:] + (1./220.)*fc7_sim[poke_ind,:] + 0.25*(1./0.0027)*1./(1.*len(str(individual))))
+        count = count + 1
+    count = 0
+    for ind in offspring:
+        for i in range(len(offspring)):
+            if count != i:
+                evaluator_pop_in[count] = evaluator_pop_in[count] + (np.sum((np.reshape(in_offspring[count,:,:],[1,img_dim*img_dim])-np.reshape(in_offspring[i,:,:],[1,img_dim*img_dim]))**2))**0.5
+                #evaluator_pop_conv2[count] = evaluator_pop_conv2[count] + (np.sum((conv2_offspring[count,:]-conv2_offspring[i,:])**2))**0.5
+                #evaluator_pop_conv5[count] = evaluator_pop_conv5[count] + (np.sum((conv5_offspring[count,:]-conv5_offspring[i,:])**2))**0.5
+                evaluator_pop_fc7[count] = evaluator_pop_fc7[count] + (np.sum((fc7_offspring[count,:]-fc7_offspring[i,:])**2))**0.5
+        count = count + 1
+
+    #pdb.set_trace()
+
+    evaluator_in = evaluator_in/np.std(evaluator_in)
+    #evaluator_conv2 = evaluator_conv2/np.mean(evaluator_conv2)
+    #evaluator_conv5 = evaluator_conv2/np.mean(evaluator_conv5)
+    evaluator_fc7 = evaluator_fc7/np.std(evaluator_fc7)
+    evaluator_len = evaluator_len/np.std(evaluator_len)
+    evaluator_pop_in = 1./(1.*evaluator_pop_in/(1.*(len(offspring)-1)))
+    evaluator_pop_in = evaluator_pop_in/np.std(evaluator_pop_in)
+    #evaluator_pop_conv2 = 1./(1.*evaluator_pop_conv2/(1.*(len(offspring)-1)))
+    #evaluator_pop_conv2 = evaluator_pop_conv2/np.mean(evaluator_pop_conv2)
+    #evaluator_pop_conv5 = 1./(1.*evaluator_pop_conv5/(1.*(len(offspring)-1)))
+    #evaluator_pop_conv5 = evaluator_pop_conv5/np.mean(evaluator_pop_conv5)
+    evaluator_pop_fc7 = 1./(1.*evaluator_pop_fc7/(1.*(len(offspring)-1)))
+    evaluator_pop_fc7 = evaluator_pop_fc7/np.std(evaluator_pop_fc7)
+
+    #evaluator1 = 1./4.*(evaluator_in + evaluator_conv2 + evaluator_conv5 + evaluator_fc7) 
+    #+ 1./4.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_conv5 + evaluator_pop_fc7)
+    #+ 2.*evaluator_len # mixing fitnesses
+
+    #evaluator1 = 1./2.*(evaluator_in + evaluator_fc7) 
+    #+ 1./2.*(evaluator_pop_in + evaluator_pop_fc7)
+    #+ evaluator_len # mixing fitnesses
+    evaluator1 = 0.*evaluator_in
+
+    #evaluator1 = evaluator_in + evaluator_fc7 + evaluator_len + 2*evaluator_pop_in + 2*evaluator_pop_fc7 # mixing fitnesses
+    #evaluator = evaluator.tolist()
+    
+    evaluator = []
+    for i in range(len(offspring)):
+        dum_hs = np.random.randint(1,6)
+        if dum_hs == 1:
+            evaluator1[i] = evaluator_in[i]
+        elif dum_hs == 2:
+            evaluator1[i] = evaluator_fc7[i]
+        elif dum_hs == 3:
+            evaluator1[i] = evaluator_pop_in[i]
+        elif dum_hs == 4:
+            evaluator1[i] = evaluator_pop_fc7[i]
+        elif dum_hs == 5:
+            evaluator1[i] = evaluator_len[i]
+        if empty_flag[i] == 0:
+            evaluator1[i] = 10.
+        evaluator.append((np.array([evaluator1[i]]),))
+
+    #pdb.set_trace()
+
+    return evaluator
+
+def eaSimple1(population, toolbox, cxpb, mutpb, ngen, stats=None,
+             halloffame=None, verbose=__debug__):
+
+    logbook = tools.Logbook()
+    logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
+
+    # Evaluate the individuals with an invalid fitness
+    invalid_ind = [ind for ind in population if not ind.fitness.valid]
+    #fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+    fitnesses = evalDum(invalid_ind)
+    #pdb.set_trace()
+    for ind, fit in zip(invalid_ind, fitnesses):
+        ind.fitness.values = fit
+
+    if halloffame is not None:
+        halloffame.update(population)
+
+    record = stats.compile(population) if stats else {}
+    logbook.record(gen=0, nevals=len(invalid_ind), **record)
+    if verbose:
+        print logbook.stream
+
+    # Begin the generational process
+    for gen in range(1, ngen + 1):
+        # Select the next generation individuals
+        offspring = toolbox.select(population, len(population))
+
+        # Vary the pool of individuals
+        offspring = varAnd(offspring, toolbox, cxpb, mutpb)
+
+        #pdb.set_trace()
+        # Evaluate the individuals with an invalid fitness
+        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+        #fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+        fitnesses = evalDum(invalid_ind)
+        for ind, fit in zip(invalid_ind, fitnesses):
+            ind.fitness.values = fit
+
+        # Update the hall of fame with the generated individuals
+        if halloffame is not None:
+            halloffame.update(offspring)
+
+        # Replace the current population by the offspring
+        population[:] = offspring
+
+        # Append the current generation statistics to the logbook
+        record = stats.compile(population) if stats else {}
+        logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+        if verbose:
+            print logbook.stream
+
+    return population, logbook
 
 def main():
 
@@ -112,15 +292,15 @@ def main():
     mstats.register("std", np.std)
     mstats.register("min", np.min)
     mstats.register("max", np.max)
-    pop, log = algorithms.eaSimple(pop, toolbox, cRate, mRate, nRuns, stats=mstats,
+    pop, log = eaSimple1(pop, toolbox, cRate, mRate, nRuns, stats=mstats,
                                    halloffame=hof, verbose=True)
     # print log
     return pop, log, hof
 
 ######## REGISTERING REQUIRED FUNCTIONS FOR GRAPHICS UNIT
 
-dispatch ={'Tx':Tx,'Ty':Ty,'R':R,'Sx':Sx,'Sy':Sy,'SF':SF,'TF':TF,'OCCL':OCCL,'P':P,'protectedAdd':protectedAdd,'protectedSubt':protectedSubt,
-'protectedMult':protectedMult,'protectedDiv':protectedDiv,'Circle':Circle}
+dispatch ={'Tx':Tx,'Ty':Ty,'R0':R0,'Sx':Sx,'Sy':Sy,'SF':SF,'TF':TF,'OC':OC,'P':P,'pA':pA,'pS':pS,
+'pM':pM,'pD':pD,'C':C}
 
 ######## EA STUF
 
@@ -129,17 +309,17 @@ dispatch ={'Tx':Tx,'Ty':Ty,'R':R,'Sx':Sx,'Sy':Sy,'SF':SF,'TF':TF,'OCCL':OCCL,'P'
 pset = gp.PrimitiveSetTyped("main", [], str) 
 pset.addPrimitive(Tx, [str, float], str)
 pset.addPrimitive(Ty, [str, float], str)
-pset.addPrimitive(R, [str, float], str)
+pset.addPrimitive(R0, [str, float], str)
 pset.addPrimitive(Sx, [str, float], str)
 pset.addPrimitive(Sy, [str, float], str)
 pset.addPrimitive(SF, [str, str], str)
 pset.addPrimitive(TF, [str, str], str)
-pset.addPrimitive(OCCL, [str, str], str)
+pset.addPrimitive(OC, [str, str], str)
 
-#pset.addPrimitive(protectedAdd, [float,float], float)
-#pset.addPrimitive(protectedSubt, [float,float], float)
-pset.addPrimitive(protectedMult, [float,float], float)
-#pset.addPrimitive(protectedDiv, [float,float], float)
+#pset.addPrimitive(pA, [float,float], float)
+#pset.addPrimitive(pS, [float,float], float)
+pset.addPrimitive(pM, [float,float], float)
+#pset.addPrimitive(pD, [float,float], float)
 
 # TERMINALS
 
@@ -148,7 +328,7 @@ pset.addTerminal("P(3)",str)
 pset.addTerminal("P(4)",str)
 pset.addTerminal("P(5)",str)
 pset.addTerminal("P(6)",str)
-pset.addTerminal("Circle()",str)
+pset.addTerminal("C()",str)
 
 for i in np.linspace(0,1,50):
     pset.addTerminal(i,float)
@@ -159,14 +339,15 @@ creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
 
 toolbox = base.Toolbox()
-toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=treesize_min, max_=treesize_max)
+toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=init_treesize_min, max_=init_treesize_max)
 toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
 toolbox.register("evaluate", evalDummy)
+#toolbox.register("")
 toolbox.register("select", tools.selTournament,tournsize=tourn_size)
 toolbox.register("mate", gp.cxOnePoint)
-toolbox.register("expr_mut", gp.genHalfAndHalf, min_=treesize_min, max_=treesize_max)
+toolbox.register("expr_mut", gp.genHalfAndHalf, min_=mut_treesize_min, max_=mut_treesize_max)
 toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 
 toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
@@ -184,13 +365,13 @@ if __name__ == "__main__":
     ydim = train_y.shape[1]
 
     if os.path.isfile("bvlc_alexnet.npy"):
-    	net_data = load(open("bvlc_alexnet.npy", "rb"), encoding="latin1").item()
-    	print('Model intialised succesfully')
+        net_data = load(open("bvlc_alexnet.npy", "rb"), encoding="latin1").item()
+        print('Model intialised succesfully')
     else:
-    	print('Model not found. Beginning file download with urllib2...')
-    	url = 'https://www.cs.toronto.edu/~guerzhoy/tf_alexnet/bvlc_alexnet.npy'
-    	urllib.urlretrieve(url, 'bvlc_alexnet.npy') 
-    	print('Model succesfully downloaded')
+        print('Model not found. Beginning file download with urllib2...')
+        url = 'https://www.cs.toronto.edu/~guerzhoy/tf_alexnet/bvlc_alexnet.npy'
+        urllib.urlretrieve(url, 'bvlc_alexnet.npy') 
+        print('Model succesfully downloaded')
 
     net_data = load(open("bvlc_alexnet.npy", "rb"), encoding="latin1").item()
 
@@ -289,6 +470,8 @@ if __name__ == "__main__":
 
     stim_mat = np.zeros([n_stim,img_dim*img_dim])
     fc7_stim_mat = np.zeros([n_stim,4096])
+    #conv2_stim_mat = np.zeros([n_stim,200704])
+    #conv5_stim_mat = np.zeros([n_stim,43264])
     for i in range(n_stim):
         im_inst = scipy.misc.imread('stimuli/pokemon-images-processed/'+input_dir[0])
         dim_inst = np.shape(im_inst)[0]
@@ -300,6 +483,10 @@ if __name__ == "__main__":
         im_inst = im_inst - mean(im_inst)
         fc7_inst = sess.run(fc7_read, feed_dict = {x:[im_inst,im_inst]})
         fc7_stim_mat[i,:] = fc7_inst[0,:]
+        #conv2_inst = sess.run(conv2_in, feed_dict = {x:[im_inst,im_inst]})
+        #conv2_stim_mat[i,:] = conv2_inst[0,:].flatten()
+        #conv5_inst = sess.run(conv5_in, feed_dict = {x:[im_inst,im_inst]})
+        #conv5_stim_mat[i,:] = conv5_inst[0,:].flatten()
 
     print('Done with pokemon intialisation')
 
