@@ -162,7 +162,7 @@ def evalDum(offspring):
             fc7_sim[i,0] = (np.sum((fc7_inst-fc7_stim_mat[i,:])**2))**0.5
         #evaluator = np.min(img_sim) + np.min(fc7_sim) # can add novelty term here
         poke_ind = np.random.randint(n_stim)
-        #poke_ind = 21
+        #poke_ind = 30
         evaluator_in[count] = img_sim[poke_ind,:]
         evaluator_conv2[count] = conv2_sim[poke_ind,:]
         evaluator_conv5[count] = conv5_sim[poke_ind,:]
