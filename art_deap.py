@@ -45,12 +45,12 @@ noise_inj = 25
 global mRate
 global cRate
 nRuns= 200
-mRate=0.4 # org 0.25
+mRate=0.25
 cRate=0.5
 global init_treesize_min
 global init_treesize_max
-init_treesize_min = 3
-init_treesize_max = 8
+init_treesize_min = 3 # 1 or 3
+init_treesize_max = 8 # 3 or 8
 global mut_treesize_min
 global mut_treesize_max
 mut_treesize_min = 0
@@ -124,6 +124,9 @@ def evalDum(offspring):
     evaluator_pop_conv5 = np.zeros([len(offspring)])
     evaluator_pop_fc7 = np.zeros([len(offspring)])
     empty_flag = np.ones([len(offspring)])
+
+    evaluator_write = np.zeros([5,2])
+
     for ind in offspring:
         FusedIm = eval(str(ind).replace('\'',''),{'__builtins__':None},dispatch)
         FusedIm = np.array(FusedIm)
@@ -182,19 +185,19 @@ def evalDum(offspring):
 
     #pdb.set_trace()
 
-    evaluator_in = evaluator_in/np.std(evaluator_in)
-    evaluator_conv2 = evaluator_conv2/np.std(evaluator_conv2)
-    evaluator_conv5 = evaluator_conv2/np.std(evaluator_conv5)
-    evaluator_fc7 = evaluator_fc7/np.std(evaluator_fc7)
-    evaluator_len = evaluator_len/np.std(evaluator_len)
-    evaluator_pop_in = 1./(1.*evaluator_pop_in/(1.*(len(offspring)-1)))
-    evaluator_pop_in = evaluator_pop_in/np.std(evaluator_pop_in)
-    evaluator_pop_conv2 = 1./(1.*evaluator_pop_conv2/(1.*(len(offspring)-1)))
-    evaluator_pop_conv2 = evaluator_pop_conv2/np.std(evaluator_pop_conv2)
-    evaluator_pop_conv5 = 1./(1.*evaluator_pop_conv5/(1.*(len(offspring)-1)))
-    evaluator_pop_conv5 = evaluator_pop_conv5/np.std(evaluator_pop_conv5)
-    evaluator_pop_fc7 = 1./(1.*evaluator_pop_fc7/(1.*(len(offspring)-1)))
-    evaluator_pop_fc7 = evaluator_pop_fc7/np.std(evaluator_pop_fc7)
+    evaluator1_in = evaluator_in/np.std(evaluator_in)
+    evaluator1_conv2 = evaluator_conv2/np.std(evaluator_conv2)
+    evaluator1_conv5 = evaluator_conv2/np.std(evaluator_conv5)
+    evaluator1_fc7 = evaluator_fc7/np.std(evaluator_fc7)
+    evaluator1_len = evaluator_len/np.std(evaluator_len)
+    evaluator1_pop_in = 1./(1.*evaluator_pop_in/(1.*(len(offspring)-1)))
+    evaluator1_pop_in = evaluator_pop_in/np.std(evaluator_pop_in)
+    evaluator1_pop_conv2 = 1./(1.*evaluator_pop_conv2/(1.*(len(offspring)-1)))
+    evaluator1_pop_conv2 = evaluator_pop_conv2/np.std(evaluator_pop_conv2)
+    evaluator1_pop_conv5 = 1./(1.*evaluator_pop_conv5/(1.*(len(offspring)-1)))
+    evaluator1_pop_conv5 = evaluator_pop_conv5/np.std(evaluator_pop_conv5)
+    evaluator1_pop_fc7 = 1./(1.*evaluator_pop_fc7/(1.*(len(offspring)-1)))
+    evaluator1_pop_fc7 = evaluator_pop_fc7/np.std(evaluator_pop_fc7)
 
     #evaluator1 = 1./4.*(evaluator_in + evaluator_conv2 + evaluator_conv5 + evaluator_fc7) 
     #+ 1./4.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_conv5 + evaluator_pop_fc7)
@@ -204,6 +207,7 @@ def evalDum(offspring):
     #+ 1./2.*(evaluator_pop_in + evaluator_pop_fc7)
     #+ evaluator_len # mixing fitnesses
     evaluator1 = 0.*evaluator_in
+    evaluator2 = 0.*evaluator_in
 
     #evaluator1 = evaluator_in + evaluator_fc7 + evaluator_len + 2*evaluator_pop_in + 2*evaluator_pop_fc7 # mixing fitnesses
     #evaluator = evaluator.tolist()
@@ -213,29 +217,36 @@ def evalDum(offspring):
         dum_hs = np.random.random(1)[0]
         if dum_hs < 0.25:
             dum_hs1 = np.random.random(1)[0]
-            if dum_hs1 < 0.33:
-                evaluator1[i] = evaluator_in[i]
-            elif dum_hs1 < 0.66:
-                evaluator1[i] = evaluator_conv5[i]
+            if dum_hs1 < 0.5:
+                evaluator1[i] = evaluator1_in[i]
             else:
-                evaluator1[i] = evaluator_fc7[i]
+                evaluator1[i] = evaluator1_fc7[i]
         elif dum_hs < 0.75:
             dum_hs1 = np.random.random(1)[0]
-            if dum_hs1 < 0.33:
-                evaluator1[i] = evaluator_pop_in[i]
-            elif dum_hs1 < 0.66:
-                evaluator1[i] = evaluator_pop_conv5[i]
+            if dum_hs1 < 0.5:
+                evaluator1[i] = evaluator1_pop_in[i]
             else:
-                evaluator1[i] = evaluator_pop_fc7[i]
+                evaluator1[i] = evaluator1_pop_fc7[i]
         else:
-            evaluator1[i] = evaluator_len[i]
+            evaluator1[i] = evaluator1_len[i]
         if empty_flag[i] == 0:
             evaluator1[i] = 10.
         evaluator.append((np.array([evaluator1[i]]),))
 
+    evaluator_write[0,0] = np.mean(evaluator_in)
+    evaluator_write[1,0] = np.mean(evaluator_fc7)
+    evaluator_write[2,0] = np.mean(evaluator_pop_in)
+    evaluator_write[3,0] = np.mean(evaluator_pop_fc7)
+    evaluator_write[4,0] = np.mean(evaluator_len)
+    evaluator_write[0,1] = np.std(evaluator_in)
+    evaluator_write[1,1] = np.std(evaluator_fc7)
+    evaluator_write[2,1] = np.std(evaluator_pop_in)
+    evaluator_write[3,1] = np.std(evaluator_pop_fc7)
+    evaluator_write[4,1] = np.std(evaluator_len)
+
     #pdb.set_trace()
 
-    return evaluator
+    return evaluator, evaluator_write
 
 def eaSimple1(population, toolbox, cxpb, mutpb, ngen, stats=None,
              halloffame=None, verbose=__debug__):
@@ -243,10 +254,12 @@ def eaSimple1(population, toolbox, cxpb, mutpb, ngen, stats=None,
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
 
+    fitness_write = np.zeros([5,2,ngen+1])
+
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
     #fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
-    fitnesses = evalDum(invalid_ind)
+    fitnesses, fitness_write[:,:,0] = evalDum(invalid_ind)
     #pdb.set_trace()
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit
@@ -271,7 +284,7 @@ def eaSimple1(population, toolbox, cxpb, mutpb, ngen, stats=None,
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         #fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
-        fitnesses = evalDum(invalid_ind)
+        fitnesses, fitness_write[:,:,gen] = evalDum(invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
 
@@ -299,7 +312,7 @@ def eaSimple1(population, toolbox, cxpb, mutpb, ngen, stats=None,
         if verbose:
             print logbook.stream
 
-    return population, logbook
+    return population, logbook, fitness_write
 
 def main():
 
@@ -315,10 +328,10 @@ def main():
     mstats.register("std", np.std)
     mstats.register("min", np.min)
     mstats.register("max", np.max)
-    pop, log = eaSimple1(pop, toolbox, cRate, mRate, nRuns, stats=mstats,
+    pop, log, fitness_write = eaSimple1(pop, toolbox, cRate, mRate, nRuns, stats=mstats,
                                    halloffame=hof, verbose=True)
     # print log
-    return pop, log, hof
+    return pop, log, hof, fitness_write
 
 ######## REGISTERING REQUIRED FUNCTIONS FOR GRAPHICS UNIT
 
@@ -515,7 +528,8 @@ if __name__ == "__main__":
 
     ## RUN THE EA AND OUPUT STATS AND IMAGES
 
-    pop, log, hof = main()
+    pop, log, hof, fitness_write = main()
+    np.save('runf2/fitness_results.npy',fitness_write)
     count = 0
     for i in pop:
         count = count + 1
@@ -527,5 +541,5 @@ if __name__ == "__main__":
         FusedIm[FusedIm==0] = 255
         FusedIm[FusedIm==20] = 255
         FusedIm[FusedIm==15] = 0
-        str_h = 'run_full2_4/'+str(count)+'.png'
+        str_h = 'runf2/'+str(count)+'.png'
         scipy.misc.imsave(str_h,FusedIm)
