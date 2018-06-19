@@ -45,7 +45,7 @@ noise_inj = 25
 global mRate
 global cRate
 nRuns= 200
-mRate=0.25
+mRate=0.4 # org 0.25
 cRate=0.5
 global init_treesize_min
 global init_treesize_max
@@ -527,5 +527,5 @@ if __name__ == "__main__":
         FusedIm[FusedIm==0] = 255
         FusedIm[FusedIm==20] = 255
         FusedIm[FusedIm==15] = 0
-        str_h = 'run_full/'+str(count)+'.png'
+        str_h = 'run_full2_4/'+str(count)+'.png'
         scipy.misc.imsave(str_h,FusedIm)
