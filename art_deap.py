@@ -36,14 +36,14 @@ global fc7_stim_mat
 global conv2_stim_mat
 global conv5_stim_mat
 global n_ea 
-n_ea = 300
-global nRuns
+n_ea = 300 #Number of individuals in the population
+global nRuns #Number of runs
 global noise_inj
 global noise_injector
-noise_injector = 0
+noise_injector = 0 #can be set to 1 to add random individuals to the population
 noise_inj = 25
-global mRate
-global cRate
+global mRate #probability of mutation
+global cRate #probability of crossover
 nRuns= 200
 mRate=0.25
 cRate=0.5
@@ -59,21 +59,6 @@ global tourn_size
 tourn_size = 3
 
 ######### CREATING REQUIRED FUNCTIONS
-
-def sig_mod(x):
-  return ((1 / (1 + math.exp(-x)))-0.5)*2
-
-def rgb2gray(rgb):
-    return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
-
-def pD(left, right):
-    try:
-        return sig_mod(left / right)
-    except ZeroDivisionError:
-        return 1
-
-def pM(left, right):
-    return (left * right)
 
 def pA(left, right):
     return (left + right)/2.
@@ -102,8 +87,6 @@ def evalDummy(individual):
     for i in range(n_stim): 
         img_sim[i,0] = (np.sum((np.reshape(FusedIm,[1,img_dim*img_dim])-stim_mat[i,:])**2))**0.5
         fc7_sim[i,0] = (np.sum((fc7_inst-fc7_stim_mat[i,:])**2))**0.5
-    #evaluator = np.min(img_sim) + np.min(fc7_sim) # can add novelty term here
-    #poke_ind = np.random.randint(n_stim)
     poke_ind = 21
     evaluator = (1./14211.)*img_sim[poke_ind,:] + (1./220.)*fc7_sim[poke_ind,:] + 0.25*(1./0.0027)*1./(1.*len(str(individual)))
     return evaluator,
@@ -163,15 +146,12 @@ def evalDum(offspring):
             conv2_sim[i,0] = (np.sum((conv2_inst-conv2_stim_mat[i,:])**2))**0.5
             conv5_sim[i,0] = (np.sum((conv5_inst-conv5_stim_mat[i,:])**2))**0.5
             fc7_sim[i,0] = (np.sum((fc7_inst-fc7_stim_mat[i,:])**2))**0.5
-        #evaluator = np.min(img_sim) + np.min(fc7_sim) # can add novelty term here
         poke_ind = np.random.randint(n_stim)
-        #poke_ind = 21
         evaluator_in[count] = img_sim[poke_ind,:]
         evaluator_conv2[count] = conv2_sim[poke_ind,:]
         evaluator_conv5[count] = conv5_sim[poke_ind,:]
         evaluator_fc7[count] = fc7_sim[poke_ind,:]
         evaluator_len[count] = 1./(1.*len(str(ind)))
-        #evaluator.append((1./14211.)*img_sim[poke_ind,:] + (1./220.)*fc7_sim[poke_ind,:] + 0.25*(1./0.0027)*1./(1.*len(str(individual))))
         count = count + 1
     count = 0
     for ind in offspring:
@@ -182,8 +162,6 @@ def evalDum(offspring):
                 evaluator_pop_conv5[count] = evaluator_pop_conv5[count] + (np.sum((conv5_offspring[count,:]-conv5_offspring[i,:])**2))**0.5
                 evaluator_pop_fc7[count] = evaluator_pop_fc7[count] + (np.sum((fc7_offspring[count,:]-fc7_offspring[i,:])**2))**0.5
         count = count + 1
-
-    #pdb.set_trace()
 
     evaluator1_in = evaluator_in/np.std(evaluator_in)
     evaluator1_conv2 = evaluator_conv2/np.std(evaluator_conv2)
@@ -199,18 +177,8 @@ def evalDum(offspring):
     evaluator1_pop_fc7 = 1./(1.*evaluator_pop_fc7/(1.*(len(offspring)-1)))
     evaluator1_pop_fc7 = evaluator_pop_fc7/np.std(evaluator_pop_fc7)
 
-    #evaluator1 = 1./4.*(evaluator_in + evaluator_conv2 + evaluator_conv5 + evaluator_fc7) 
-    #+ 1./4.*(evaluator_pop_in + evaluator_pop_conv2 + evaluator_pop_conv5 + evaluator_pop_fc7)
-    #+ 2.*evaluator_len # mixing fitnesses
-
-    #evaluator1 = 1./2.*(evaluator_in + evaluator_fc7) 
-    #+ 1./2.*(evaluator_pop_in + evaluator_pop_fc7)
-    #+ evaluator_len # mixing fitnesses
     evaluator1 = 0.*evaluator_in
     evaluator2 = 0.*evaluator_in
-
-    #evaluator1 = evaluator_in + evaluator_fc7 + evaluator_len + 2*evaluator_pop_in + 2*evaluator_pop_fc7 # mixing fitnesses
-    #evaluator = evaluator.tolist()
     
     evaluator = []
     for i in range(len(offspring)):
@@ -244,8 +212,6 @@ def evalDum(offspring):
     evaluator_write[3,1] = np.std(evaluator_pop_fc7)
     evaluator_write[4,1] = np.std(evaluator_len)
 
-    #pdb.set_trace()
-
     return evaluator, evaluator_write
 
 def eaSimple1(population, toolbox, cxpb, mutpb, ngen, stats=None,
@@ -258,9 +224,7 @@ def eaSimple1(population, toolbox, cxpb, mutpb, ngen, stats=None,
 
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
-    #fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
     fitnesses, fitness_write[:,:,0] = evalDum(invalid_ind)
-    #pdb.set_trace()
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit
 
@@ -279,11 +243,8 @@ def eaSimple1(population, toolbox, cxpb, mutpb, ngen, stats=None,
 
         # Vary the pool of individuals
         offspring = varAnd(offspring, toolbox, cxpb, mutpb)
-
-        #pdb.set_trace()
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        #fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
         fitnesses, fitness_write[:,:,gen] = evalDum(invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
@@ -315,9 +276,6 @@ def eaSimple1(population, toolbox, cxpb, mutpb, ngen, stats=None,
     return population, logbook, fitness_write
 
 def main():
-
-    #random.seed(319)
-
     pop = toolbox.population(n=n_ea)
     hof = tools.HallOfFame(1)
     
@@ -330,7 +288,6 @@ def main():
     mstats.register("max", np.max)
     pop, log, fitness_write = eaSimple1(pop, toolbox, cRate, mRate, nRuns, stats=mstats,
                                    halloffame=hof, verbose=True)
-    # print log
     return pop, log, hof, fitness_write
 
 ######## REGISTERING REQUIRED FUNCTIONS FOR GRAPHICS UNIT
@@ -354,8 +311,6 @@ pset.addPrimitive(OC, [str, str], str)
 
 pset.addPrimitive(pA, [float,float], float)
 pset.addPrimitive(pS, [float,float], float)
-#pset.addPrimitive(pM, [float,float], float)
-#pset.addPrimitive(pD, [float,float], float)
 
 # TERMINALS
 
@@ -380,7 +335,6 @@ toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.ex
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
 toolbox.register("evaluate", evalDummy)
-#toolbox.register("")
 toolbox.register("select", tools.selTournament,tournsize=tourn_size)
 toolbox.register("mate", gp.cxOnePoint)
 toolbox.register("expr_mut", gp.genHalfAndHalf, min_=mut_treesize_min, max_=mut_treesize_max)
