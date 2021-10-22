@@ -3,7 +3,7 @@ Codes to evolve grayscale objects
 
 In order to be able to run the project install DEAP and Tensorflow libraries. The project was build using python 2.7. 
 
-The art_deap.py contains the code for evolving grayscale object.
+The art_deap.py contains the code for evolving grayscale objects.
 
 The graphics_deap.py file contains code that handles the drawing of the shapes.
 
